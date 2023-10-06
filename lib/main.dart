@@ -55,21 +55,34 @@ class _FutureTestState extends State<FutureTest> {
 
   */
   Future<List<User>> makeHttpRequestUser() async {
+    //erstellt eine Adresse an die unsere Anfrage gehen soll
     Uri adress = Uri.https("jsonplaceholder.typicode.com", "users");
+    // macht eine http request an die Adresse und speichert die Antwort(Response)
     http.Response serverResponse = await http.get(adress);
-
+    // Macht aus der Antwort(Textform json) eine Liste aus Maps(json)
     var jsonResponse = jsonDecode(serverResponse.body);
     
+    // user List um anstatt einer mapfunktion eine forschleife zu benutzen
     List<User> userList = [];
-    //print(jsonResponse);
+    
+    // unterscheidung zwischen api list antwort oder einzeldes jsonobjekt
     if (jsonResponse.runtimeType == List) {
+      /* 
+      andere schreibweise der mapfunktion: guckt sich alle maps(json objekte) an und wandelt sie
+      mit der user.fromJson funktion in einen user um, der dann in der userListe gespeichert wird
+
+      */
       for (var i in jsonResponse) {
         User user = User.fromJson(i);
         userList.add(user);
       }
-      //print(userList);
+      
+
+      // speichert die liste in unsrer Box
       Hive.box<List>("userListBox2").put("userList", userList);
+
       return userList;
+
     } else {
       return [User.fromJson(jsonResponse)];
     }
@@ -88,12 +101,23 @@ class _FutureTestState extends State<FutureTest> {
     if (box.isEmpty) {
       print("make http request");
       return FutureBuilder(
+          // unsere request an den server auf die wir ja warten müssen
           future: makeHttpRequestUser(),
           builder: (context, snapshot) {
+            // snapshot.hasData überprüft ob unsere funktion schon fertig ist
             if (snapshot.hasData) {
+              // wenn ja rufe die return daten(mit snapshot.data) ab und überprüfe ob null
               List<User> notNullUserList = snapshot.data ?? [];
 
+              //wieder eine Liste mit widgets für andere schreibweise der maping funktion
               List<Widget> widgetList = [];
+
+              /*
+              andere schreibweise der maping funktion die sich jeden user(aus unsrer Liste) anguckt und
+              
+              ein Widget zur widgetliste hinzufügt, welches infos aus den usern anzeigt(oragene container mit Daten)
+
+              */
               for (User user in notNullUserList) {
                 widgetList.add(Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -111,22 +135,25 @@ class _FutureTestState extends State<FutureTest> {
                   ),
                 ));
               }
+              // unser widgetliste wird angezeigt
               return Expanded(
                 child: ListView(
                   children: widgetList,
                 ),
               );
             } else {
+              //wird angezeigt falls noch keine daten verfügbar sind
               return CircularProgressIndicator();
             }
           });
     } else {
        print("get data from hive");
       List<Widget> widgetList = [];
-
+      // wir holen und die daten unsrer hive box
       List<User> notNullUserList =
           box.get("userList")?.map((e) => e as User).toList() ?? [];
       print(notNullUserList);
+      // das gleiche mapping wie oben im futurebuilder
       for (User user in notNullUserList) {
         widgetList.add(Padding(
           padding: const EdgeInsets.all(8.0),
