@@ -22,7 +22,9 @@ class User {
 
 
 
-
+  /*
+    Macht aus einer Map(unserem Json Objekt eines Users) ein Userobjekt
+  */
   factory User.fromJson(Map<String, dynamic> json) {
     return User(email: json["email"], name: json["name"], id: json["id"], city: json["address"]["city"],city2: json["address"]["city"]);
   }

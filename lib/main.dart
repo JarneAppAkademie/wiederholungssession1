@@ -10,7 +10,9 @@ void main() async {
   await Hive.initFlutter();
 
   var box = await Hive.openBox("testBox");
+  //registriert User in Hive um diese zu nutzen
   Hive.registerAdapter(UserAdapter());
+  // erstellt eine box die listen speichern kann. Durch den generierten Adapter(User.g.dart) können wir auch User darin speichern
   await Hive.openBox<List>("userListBox2");
 
   //box.put("name","Test");
@@ -47,21 +49,25 @@ class _FutureTestState extends State<FutureTest> {
   void initState() {
     super.initState();
   }
+  /*
+    Macht die httpRequest an die Api und wandelt den json ( Liste aus maps, welche den User repräsentieren)
+    in eine Liste aus Userobjekten zurück, die dann returned wird
 
+  */
   Future<List<User>> makeHttpRequestUser() async {
     Uri adress = Uri.https("jsonplaceholder.typicode.com", "users");
     http.Response serverResponse = await http.get(adress);
 
     var jsonResponse = jsonDecode(serverResponse.body);
-    print(jsonResponse.runtimeType == List);
+    
     List<User> userList = [];
-    print(jsonResponse);
+    //print(jsonResponse);
     if (jsonResponse.runtimeType == List) {
       for (var i in jsonResponse) {
         User user = User.fromJson(i);
         userList.add(user);
       }
-      print(userList);
+      //print(userList);
       Hive.box<List>("userListBox2").put("userList", userList);
       return userList;
     } else {
@@ -69,9 +75,18 @@ class _FutureTestState extends State<FutureTest> {
     }
   }
 
+  /*
+    Entscheidet je nachdem ob wir schon User in unser box gespeichert haben 
+    welches Widget angezeigt werden soll. Also entweder den Future Builder, der eine
+    httpRequest nach den Usern macht, wenn noch keine Lokal gespeichert sind
+
+    sonst wird auf die userliste der hive box zugegriffen
+
+  */
   Widget showHiveOrHttp() {
     Box<List> box = Hive.box<List>("userListBox2");
     if (box.isEmpty) {
+      print("make http request");
       return FutureBuilder(
           future: makeHttpRequestUser(),
           builder: (context, snapshot) {
@@ -106,9 +121,11 @@ class _FutureTestState extends State<FutureTest> {
             }
           });
     } else {
+       print("get data from hive");
       List<Widget> widgetList = [];
-      
-      List<User> notNullUserList = box.get("userList")?.map((e) => e as User).toList() ?? [];
+
+      List<User> notNullUserList =
+          box.get("userList")?.map((e) => e as User).toList() ?? [];
       print(notNullUserList);
       for (User user in notNullUserList) {
         widgetList.add(Padding(
